@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>FSE Chatroom</title>
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<style>
+
+		#messageWrap {
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+
+<div class="container">
+
+	<div id = "nameWrap" class = "row" >
+		<div class = "col-md-12">
+			<form id = "setName">
+				<div class="form-group">
+					</br>
+					<label>Welcome to FSE Chat Room!</label>
+					<p>Enter a username</p>
+					<p id = "nameErr"></p>
+					<input class="form-control" id="username"></input>
+					</br>
+					<input class="btn btn-primary" value = "join" type = "submit"></input>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<div id="messageWrap" class="row">
+		<div class = "col-md-8">
+			<div class="chat" id = "chat"></div>
+			<form id = "sendmessage">
+				<div class="form-group">
+					<input class = "form-control" id = "message"></input>
+					</br>
+					<input class = "btn btm-primary"  value="send message" type="submit"></input>
+				</div>
+			</form>
+		</div>
+
+		<div class = "col-md-4">
+			<div class="well">
+				<h2>Online Users</h2>
+				<div id="users"></div>
+				<ul class="list-group" id="users"></ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+
+	<script src = "http://code.jquery.com/jquery-latest.min.js"></script>
+	<script src = "https://cdn.socket.io/socket.io-1.4.8.js"></script>
+	<script>
+		jQuery (function($){
+			var socket = io.connect();
+			var $users = $('#users');
+			var $nameForm = $('#setName');
+			var $nameErr = $('#nameErr');
+			var $nameBox = $('#username');
+
+			socket.on('loadmessage',function(docs){
+				for (var i = 0; i < docs.length; i++) {
+					//var t = docs[i].time.toString();
+					//$chat.append('<b>' + docs[i].name + ': </b>' +docs[i].msg + "<br/>" + docs[i].time +"<br/>");
+					$chat.append('<div class="well"><em>'+ docs[i].name +'</em>: ' + docs[i].msg +'</br>('+docs[i].time+')'+'</div>');
+
+				}
+			});
+
+			$nameForm.submit(function(e){
+				e.preventDefault();
+				socket.emit("enter_user", $nameBox.val(),function(data){
+					if (data) {
+						$('#nameWrap').hide();
+						$('#messageWrap').show();
+					}
+					else {
+						$nameErr.html('Name is duplicated, please try again');
+					}
+				});
+			});
+
+			socket.on('names',function(data){
+				var h = "";
+				for (var i = 0; i < data.length; i++) {
+					h += '<li class="list-group-item">'+data[i]+'</li>'
+				}
+				$users.html(h);
+			});
+
+
+
+			var $msgForm = $('#sendmessage');
+			var $msgBox = $('#message');
+			var $chat = $('#chat');
+			
+			$msgForm.submit(function(e){
+				e.preventDefault();
+				socket.emit("send_message", $msgBox.val());
+				$msgBox.val("");
+			});
+			socket.on("new_message", function(data){
+				var time = new Date().toString();//.
+				//replace(/T/, ' ').// replace T with a space
+  				//replace(/\..+/, '');
+  				$chat.append('<div class="well"><em>'+ data.name +'</em>: ' + data.msg +'</br>('+time+')'+'</div>');
+
+				//$chat.append('<b>' + data.name + ': </b>' +data.msg + "<br/>" + time +"<br/>");
+			});
+		});
+	</script>
+</body>
+</html>
